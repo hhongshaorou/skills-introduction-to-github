@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园恋爱数据可视化分析报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">校园恋爱数据可视化分析报告</h1>
+            <p class="text-center text-gray-600">交互式分析大学生恋爱现状与趋势</p>
+        </header>
+
+        <!-- 导航栏 -->
+        <div class="flex flex-wrap justify-center mb-6 bg-white rounded-lg shadow p-2">
+            <button class="nav-btn active px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="support">恋爱支持需求</button>
+            <button class="nav-btn px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="single">单身率趋势</button>
+            <button class="nav-btn px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="attraction">吸引力品质</button>
+            <button class="nav-btn px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="concerns">恋爱关注问题</button>
+            <button class="nav-btn px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="expense">恋爱花费</button>
+            <button class="nav-btn px-4 py-2 m-1 rounded-md text-sm font-medium" data-section="social">社交与恋爱</button>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="flex flex-wrap gap-4 mb-6">
+            <!-- 图表类型选择 -->
+            <div class="bg-white p-4 rounded-lg shadow flex-1 min-w-[250px]">
+                <h3 class="text-lg font-medium mb-3 text-gray-700">图表类型</h3>
+                <div class="flex flex-wrap gap-2" id="chart-type-selector">
+                    <button class="chart-type-btn active px-3 py-1 text-sm rounded-md" data-type="pie">饼图</button>
+                    <button class="chart-type-btn px-3 py-1 text-sm rounded-md" data-type="bar">柱状图</button>
+                    <button class="chart-type-btn px-3 py-1 text-sm rounded-md" data-type="line">折线图</button>
+                    <button class="chart-type-btn px-3 py-1 text-sm rounded-md" data-type="radar">雷达图</button>
+                </div>
+            </div>
+
+            <!-- 筛选器 -->
+            <div class="bg-white p-4 rounded-lg shadow flex-1 min-w-[250px]" id="filter-container">
+                <h3 class="text-lg font-medium mb-3 text-gray-700">数据筛选</h3>
+                <div id="filter-options" class="space-y-2">
+                    <!-- 这里的筛选器会根据当前数据动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表展示区域 -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800" id="chart-title">学生对学校恋爱支持的需求</h2>
+                <button class="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition" id="toggle-details">
+                    查看详细分析
+                </button>
+            </div>
+            <div class="h-[400px] w-full relative" id="chart-container">
+                <canvas id="main-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- 详细分析区域 -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6 hidden" id="analysis-container">
+            <h3 class="text-lg font-medium mb-3 text-gray-700">数据详细分析</h3>
+            <div id="analysis-content" class="prose max-w-none">
+                <!-- 详细分析内容将动态插入 -->
+            </div>
+        </div>
+
+        <!-- 数据洞察卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="insights-container">
+            <!-- 数据洞察卡片将动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 数据集
+        const datasets = {
+            support: {
+                labels: ['交友联谊活动', '情侣活动场所', '恋爱心理咨询', '健康恋爱讲座', '不需要任何支持', '其他'],
+                values: [26.30, 21.34, 20.60, 19.11, 11.17, 1.49],
+                analysis: `
+                    <p><strong>分析结果：</strong></p>
+                    <ol>
+                        <li>大学生日常交友圈较为狭窄，尤其是男女比例严重失衡的专业（如工科），很难自然认识异性朋友。突破现有交友圈是关键。</li>
+                        <li>目前多数校园内缺乏适合情侣约会的专门区域，不少学生可能在公共场所中感到不够舒适和隐私性不足。</li>
+                        <li>恋爱关系中常涉及情感困惑（如争吵、分手等），学生缺乏成熟的应对方式。</li>
+                        <li>部分学生对恋爱仍缺乏正确的观念和实践经验（如如何处理分歧、表达情感、平衡学业与恋爱等）。</li>
+                    </ol>
+                `,
+                insights: [
+                    { title: "交友需求最高", content: "26.30%的学生希望学校提供交友联谊活动，反映了大学生拓展社交圈的强烈需求" },
+                    { title: "心理咨询需求明显", content: "超过20%的学生需要恋爱心理咨询，表明情感困惑普遍存在" },
+                    { title: "自主性较强", content: "仅有11.17%的学生表示不需要任何支持，说明大多数学生期望获得某种形式的恋爱支持" }
+                ]
+            },
+            single: {
+                labels: ['大一', '大二', '大三', '大四'],
+                values: [72, 69, 93, 90],
+                analysis: `
+                    <p><strong>变化趋势分析：</strong></p>
+                    <ul>
+                        <li><strong>大一至大二：</strong>单身率从72%降至69%，新生社交活动增多，恋爱机会增加。</li>
+                        <li><strong>大三：</strong>单身率突增至93%，与专业课程负担(平均每周28.5节课)、实习实践(每学期平均2.8次)以及高达76%的考研参与率密切相关。</li>
+                        <li><strong>大四：</strong>单身率保持在90%高位，毕业论文、就业压力和未来规划分散了学生精力。</li>
+                    </ul>
+                    <p><strong>分析结果：</strong>新生适应环境后，社交圈扩大，恋爱机会增加，导致单身率略微下降。大三阶段由于学业压力增加，单身率猛增。</p>
+                    <p>本科生加权单身率：81%（比全国重点高校平均水平高出4.7个百分点）</p>
+                `,
+                insights: [
+                    { title: "大三单身高峰", content: "大三单身率高达93%，与考研压力和课业负担直接相关" },
+                    { title: "大一到大二下降", content: "大一到大二单身率略有下降，说明适应期后社交活动增加" },
+                    { title: "总体单身率较高", content: "本科生加权单身率81%，高于全国重点高校平均水平" }
+                ]
+            },
+            attraction: {
+                labels: ['沟通技巧', '责任感', '包容心', '幽默感', '学习能力'],
+                values: [46, 21, 25, 12, 13],
+                subData: {
+                    "单身人群": [20, 18, 15, 19, 10],
+                    "恋爱中人群": [46, 24, 12, 5, 16],
+                    "刚分手人群": [15, 20, 25, 10, 8]
+                },
+                analysis: `
+                    <p><strong>人际关系吸引力品质选择分析：</strong></p>
+                    <ol>
+                        <li><strong>沟通技巧：</strong>占比最高，接近46%。良好的沟通不仅能增进感情，还能有效解决恋爱中可能出现的分歧和矛盾。学生在恋爱中可能经常遇到时间分配问题、情感表达误解等，需要良好的沟通技巧来化解矛盾并促进相互理解。</li>
+                        <li><strong>责任感：</strong>单身人群占比18%，恋爱中群体为24%。恋爱中人群对于伴侣是否具备责任感更为在意，比单身群体高出约6%。单身人群可能更看重吸引力和互动氛围，而对责任感的要求尚未成为挑选伴侣的重点。</li>
+                        <li><strong>包容心：</strong>数据显示，刚经历分手的人群中，25%认为包容心极为重要。包容心可以理解为接纳对方缺点和处理冲突的能力。在分手原因中，"包容力不足"可能是分手的关键因素之一。</li>
+                        <li><strong>幽默感：</strong>单身学生中，有19%强调幽默感，而在恋爱中人群仅5%。幽默感对于初期建立吸引力十分有效，但在恋爱阶段，幽默感的作用可能被更加务实的品质取代。</li>
+                        <li><strong>学习能力：</strong>恋爱人群16%，单身人群10%。恋爱群体中16%将伴侣的学习能力看作吸引力的重要特征，单身人群中仅10%持此观点。</li>
+                    </ol>
+                `,
+                insights: [
+                    { title: "沟通为王", content: "无论恋爱状态如何，沟通技巧都是最受重视的吸引力品质" },
+                    { title: "幽默感差异大", content: "单身人群重视幽默感(19%)，而恋爱中人群仅有5%认为重要" },
+                    { title: "分手后看重包容", content: "刚分手人群明显更重视包容心(25%)，说明包容不足可能是分手主因" }
+                ]
+            },
+            concerns: {
+                labels: ['时间分配', '经济压力', '毕业去向', '学习影响', '周围评价', '其他'],
+                values: [28.37, 21.03, 21.03, 19.64, 7.14, 2.78],
+                analysis: `
+                    <p><strong>恋爱中最关注的问题分析：</strong></p>
+                    <ol>
+                        <li><strong>时间分配（28.37%）：</strong>核心矛盾：学生群体需平衡学业、社团活动、实习与恋爱关系，时间争夺成为主要压力源。典型表现：因课业繁忙或考试周减少约会时间，导致一方产生"被忽视"的感受。深层原因：时间管理能力不足，且恋爱中的"陪伴需求"与个人发展目标存在冲突。</li>
+                        <li><strong>经济压力 & 毕业去向（并列21.03%）：</strong>经济压力：学生经济独立性弱，日常约会开销（餐饮、礼物、交通）易引发焦虑。隐形压力：节日仪式感（情人节、纪念日）带来的攀比性消费。毕业去向：现实困境：就业城市分歧、考研/留学规划差异可能直接导致关系破裂。焦虑传导：对未来的不确定性会放大当下的矛盾（如"毕分族"现象）。</li>
+                        <li><strong>学习影响（19.64%）：</strong>双向作用：正向：部分情侣通过共同学习提升效率（如图书馆打卡、知识点互助）。负向：过度投入恋爱导致挂科、竞赛失利等学业风险。关键转折点：保研/奖学金评选期间，学业压力会加剧情侣矛盾。</li>
+                        <li><strong>周围评价（7.14%）：</strong>低占比原因：学生更关注关系内部质量，而非外界认可度。同龄人环境中恋爱自由度高，父母干预较少（与工作后的婚恋压力形成对比）。例外情况：跨阶层恋爱（如城乡背景差异）可能引发朋友群体的隐性偏见。</li>
+                    </ol>
+                `,
+                insights: [
+                    { title: "时间是第一矛盾", content: "28.37%的学生认为时间分配是恋爱中最大的问题，管理课业与情感需要平衡" },
+                    { title: "未来取向困扰", content: "超过21%的学生担忧毕业去向问题，异地就业/深造成为关系隐患" },
+                    { title: "评价压力较小", content: "仅7.14%的人担心周围评价，表明大学生恋爱相对自由开放" }
+                ]
+            },
+            expense: {
+                labels: ['0-300元', '301-600元', '601-1000元', '1000元以上'],
+                values: [34.21, 26.32, 23.68, 15.79],
+                analysis: `
+                    <p><strong>恋爱月均花费情况分析：</strong></p>
+                    <p><strong>低成本恋爱是主流选择：</strong>数据显示，60.53%的情侣月均消费≤600元（0-300元占34.21% + 301-600元占26.32%），说明恋爱支出完全可控。经济压力本质是价值观问题：坦诚沟通预算反而提升信任度。</p>
+                `,
+                insights: [
+                    { title: "低成本恋爱主流", content: "60.53%的情侣月均花费不超过600元，表明恋爱支出完全可控" },
+                    { title: "高消费比例不低", content: "近16%的情侣月均花费超过1000元，可能与消费观念和经济条件相关" },
+                    { title: "花费梯度分布", content: "从低到高花费人群比例逐渐递减，符合学生群体经济状况" }
+                ]
+            },
+            social: {
+                labels: ['几乎不参加', '每周1-2次', '每周3次以上'],
+                values: [16.67, 26.83, 26.67],
+                subData: {
+                    "社交时长": ["1小时以内", "1-2小时", "2小时以上"],
+                    "恋爱率": [20.5, 30.77, 35.14]
+                },
+                attitudeData: {
+                    "态度": ["非常有必要", "有机会就谈", "无所谓", "尽量避免", "坚决不谈"],
+                    "恋爱率": [31.25, 23.26, 15.22, 0, 0]
+                },
+                analysis: `
+                    <p><strong>社交活动与恋爱率关系分析：</strong></p>
+                    <ol>
+                        <li><strong>参与频率与恋爱率：</strong>最佳频率：每周参与1-2次社交活动（恋爱率26.83%）原因：适度社交既能扩大交友圈，又避免过度消耗精力。反例：几乎不参加社交的学生恋爱率仅16.67%，说明被动等待显著降低机会。</li>
+                        <li><strong>单次时长与恋爱率：</strong>1-2小时：恋爱率30.77%；超过2小时：恋爱率35.14%。结论：深度社交（如团队协作、兴趣活动）更易建立情感联结，但需注意时间成本（需平衡学业）。</li>
+                        <li><strong>矛盾点解释：</strong>虽然超2小时社交的恋爱率更高，但高频次活动可能导致时间冲突或社交疲劳。建议优先选择高质量活动（如学术沙龙、运动社团），而非单纯延长时长。</li>
+                        <li><strong>态度影响：</strong>积极态度（"非常有必要"）的恋爱率是消极态度（"无所谓"）的2倍，证明主观意愿直接影响行为结果。"坚决不谈"群体的零恋爱率表明，心理防御机制会彻底阻断关系建立可能。</li>
+                    </ol>
+                    <p><strong>结论：</strong>完全不出门社交的，恋爱成功率直接砍半。每周出去1-2次最划算。每周超过3次社交反而坏事。社交别当赶场工具人。每周选2个晚上参加能「自然产生合作」的活动，比单纯吃饭尬聊效率高10倍。</p>
+                `,
+                insights: [
+                    { title: "适度社交最优", content: "每周1-2次社交活动的恋爱率最高(26.83%)，过多或过少都不理想" },
+                    { title: "深度社交效果好", content: "社交时长超过2小时的恋爱率达35.14%，质量比数量更重要" },
+                    { title: "态度决定结果", content: "认为恋爱'非常有必要'的人恋爱率是'无所谓'态度者的两倍" }
+                ]
+            }
+        };
+
+        // 当前活跃的数据集和图表类型
+        let activeDataset = 'support';
+        let activeChartType = 'pie';
+        let chart = null;
+        let dataFilters = {};
+
+        // 颜色设置
+        const colorPalette = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(199, 199, 199, 0.7)',
+            'rgba(83, 102, 255, 0.7)',
+            'rgba(40, 159, 64, 0.7)',
+            'rgba(210, 199, 199, 0.7)',
+        ];
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initChartTypeSelector();
+            renderDataset(activeDataset);
+            initToggleDetails();
+        });
+
+        // 初始化导航
+        function initNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有活跃状态
+                    navButtons.forEach(b => {
+                        b.classList.remove('active', 'bg-blue-100', 'text-blue-700');
+                        b.classList.add('text-gray-600', 'hover:bg-gray-100');
+                    });
+                    
+                    // 添加活跃状态
+                    btn.classList.add('active', 'bg-blue-100', 'text-blue-700');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                    
+                    // 更新活跃数据集
+                    activeDataset = btn.dataset.section;
+                    renderDataset(activeDataset);
+                });
+                
+                // 设置初始样式
+                if (btn.classList.contains('active')) {
+                    btn.classList.add('bg-blue-100', 'text-blue-700');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+        }
+
+        // 初始化图表类型选择器
+        function initChartTypeSelector() {
+            const chartTypeButtons = document.querySelectorAll('.chart-type-btn');
+            chartTypeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 移除所有活跃状态
+                    chartTypeButtons.forEach(b => {
+                        b.classList.remove('active', 'bg-blue-100', 'text-blue-700');
+                        b.classList.add('text-gray-600', 'hover:bg-gray-100');
+                    });
+                    
+                    // 添加活跃状态
+                    btn.classList.add('active', 'bg-blue-100', 'text-blue-700');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                    
+                    // 更新活跃图表类型
+                    activeChartType = btn.dataset.type;
+                    updateChart();
+                });
+                
+                // 设置初始样式
+                if (btn.classList.contains('active')) {
+                    btn.classList.add('bg-blue-100', 'text-blue-700');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+        }
+
+        // 初始化详情切换
+        function initToggleDetails() {
+            const toggleBtn = document.getElementById('toggle-details');
+            const analysisContainer = document.getElementById('analysis-container');
+            
+            toggleBtn.addEventListener('click', () => {
+                if (analysisContainer.classList.contains('hidden')) {
+                    analysisContainer.classList.remove('hidden');
+                    toggleBtn.textContent = '隐藏详细分析';
+                } else {
+                    analysisContainer.classList.add('hidden');
+                    toggleBtn.textContent = '查看详细分析';
+                }
+            });
+        }
+
+        // 渲染数据集
+        function renderDataset(datasetKey) {
+            const dataset = datasets[datasetKey];
+            
+            // 更新标题
+            document.getElementById('chart-title').textContent = getTitleForDataset(datasetKey);
+            
+            // 更新分析内容
+            document.getElementById('analysis-content').innerHTML = dataset.analysis;
+            
+            // 生成筛选器
+            generateFilters(datasetKey);
+            
+            // 生成洞察卡片
+            generateInsights(dataset.insights);
+            
+            // 更新图表
+            updateChart();
+        }
+
+        // 为数据集获取标题
+        function getTitleForDataset(datasetKey) {
+            const titles = {
+                'support': '学生对学校恋爱支持的需求',
+                'single': '各年级单身率趋势分析',
+                'attraction': '人际关系吸引力品质选择',
+                'concerns': '恋爱中最关注的问题',
+                'expense': '恋爱月均花费情况',
+                'social': '社交活动与恋爱率关系'
+            };
+            return titles[datasetKey] || '数据分析';
+        }
+
+        // 生成筛选器
+        function generateFilters(datasetKey) {
+            const filterContainer = document.getElementById('filter-options');
+            filterContainer.innerHTML = '';
+            
+            const dataset = datasets[datasetKey];
+            
+            // 根据数据集生成不同的筛选选项
+            if (datasetKey === 'attraction' && dataset.subData) {
+                // 创建群体选择筛选器
+                const groupFilter = document.createElement('div');
+                groupFilter.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-1">按群体筛选</label>
+                    <select id="group-filter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <option value="all">全部群体</option>
+                        ${Object.keys(dataset.subData).map(group => `<option value="${group}">${group}</option>`).join('')}
+                    </select>
+                `;
+                filterContainer.appendChild(groupFilter);
+                
+                // 添加事件监听器
+                document.getElementById('group-filter').addEventListener('change', (e) => {
+                    dataFilters.group = e.target.value;
+                    updateChart();
+                });
+            }
+            
+            if (datasetKey === 'social' && dataset.subData) {
+                // 创建社交时长/态度选择筛选器
+                const viewFilter = document.createElement('div');
+                viewFilter.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-1">数据视图</label>
+                    <select id="view-filter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <option value="frequency">按社交频率</option>
+                        <option value="duration">按社交时长</option>
+                        <option value="attitude">按恋爱态度</option>
+                    </select>
+                `;
+                filterContainer.appendChild(viewFilter);
+                
+                // 添加事件监听器
+                document.getElementById('view-filter').addEventListener('change', (e) => {
+                    dataFilters.view = e.target.value;
+                    updateChart();
+                });
+            }
+            
+            // 重置筛选器
+            dataFilters = {};
+        }
+
+        // 生成洞察卡片
+        function generateInsights(insights) {
+            const insightsContainer = document.getElementById('insights-container');
+            insightsContainer.innerHTML = '';
+            
+            if (!insights || insights.length === 0) return;
+            
+            insights.forEach(insight => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow';
+                card.innerHTML = `
+                    <h3 class="text-lg font-medium mb-2 text-gray-800">${insight.title}</h3>
+                    <p class="text-gray-600">${insight.content}</p>
+                `;
+                insightsContainer.appendChild(card);
+            });
+        }
+
+        // 更新图表
+        function updateChart() {
+            const ctx = document.getElementById('main-chart').getContext('2d');
+            
+            // 销毁现有图表
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // 获取当前数据集
+            const dataset = datasets[activeDataset];
+            
+            // 根据筛选器处理数据
+            let labels = [...dataset.labels];
+            let values = [...dataset.values];
+            let title = getTitleForDataset(activeDataset);
+            
+            // 应用群体筛选器
+            if (dataFilters.group && dataFilters.group !== 'all' && dataset.subData && dataset.subData[dataFilters.group]) {
+                values = dataset.subData[dataFilters.group];
+                title += ` - ${dataFilters.group}`;
+            }
+            
+            // 应用社交视图筛选器
+            if (dataFilters.view && activeDataset === 'social') {
+                if (dataFilters.view === 'duration' && dataset.subData) {
+                    labels = dataset.subData["社交时长"];
+                    values = dataset.subData["恋爱率"];
+                    title = '社交时长与恋爱率关系';
+                } else if (dataFilters.view === 'attitude' && dataset.attitudeData) {
+                    labels = dataset.attitudeData["态度"];
+                    values = dataset.attitudeData["恋爱率"];
+                    title = '恋爱态度与恋爱率关系';
+                }
+            }
+            
+            // 更新标题
+            document.getElementById('chart-title').textContent = title;
+            
+            // 准备图表配置
+            let chartConfig = {
+                type: activeChartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: values,
+                        backgroundColor: colorPalette.slice(0, values.length),
+                        borderColor: colorPalette.map(color => color.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.raw + '%';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // 针对不同图表类型的特殊配置
+            if (activeChartType === 'pie' || activeChartType === 'doughnut') {
+                chartConfig.options.plugins.datalabels = {
+                    formatter: (value) => {
+                        return value + '%';
+                    },
+                    color: '#fff',
+                    font: {
+                        weight: 'bold'
+                    }
+                };
+            } else if (activeChartType === 'bar') {
+                chartConfig.options.scales = {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                };
+            } else if (activeChartType === 'line') {
+                chartConfig.options.scales = {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                };
+                chartConfig.data.datasets[0].fill = false;
+                chartConfig.data.datasets[0].tension = 0.1;
+            } else if (activeChartType === 'radar') {
+                chartConfig.options.scales = {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                };
+                chartConfig.data.datasets[0].fill = true;
+                chartConfig.data.datasets[0].pointBackgroundColor = chartConfig.data.datasets[0].borderColor;
+            }
+            
+            // 创建新图表
+            chart = new Chart(ctx, chartConfig);
+        }
+    </script>
+<script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+</html>
